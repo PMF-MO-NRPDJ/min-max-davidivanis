@@ -16,39 +16,63 @@
 
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
 
-// Izračunaj kut između p1-p2 i p3-p2
 template <typename Point>
 double kut(Point const & p1, Point const & p2, Point const & p3)
 {
-   // računanje kuta (VAŠ KOD) ide ovdje    
-   // Point će biti Dune::FieldVector<double, dim>. Norma se računa 
-   // pomoću funkcije članice klase two_norm(), a skalarni produkt 
-   // pomoću funkcije članice klase dot(). Pogledati dokumentaciju klase
-   //  Dune::FieldVector<double, dim>.
+
+    Point p12, p32;
+    p12=p1-p2;
+    p32=p3-p2;
+    double skal_prod=p12.dot(p32);
+    double norm_prod;
+    norm_prod=p12.two_norm()*p32.two_norm();
+    double kut=std::acos(skal_prod/norm_prod);
+    kut*=180/M_PI;
+
     return kut;
 }
 
 int main(int argc, char** argv)
 {
+    Dune::MPIHElper::instance(argc, argv);
     const int dim = 2;
     using GridType = Dune::UGGrid<dim>;
-    using LeafGridView = ...;
-     
-    // UČITATI 2D MREŽU IZ GMSH DATOTEKE KOJA JE ZADANA KAO ARGUMENT KOMANDNE LINIJE.
-    
-    // gridView JE LeafGridView!
+    using LeafGridView = GridType::LeafGridView;
+    std::unique_ptr<GridType> p_grid = DUne::GmshReader<GridType>::read(argv[1]);
+    auto gridView = p_grid->leafGridView();
+
+    int count=0;
+    double max=0;
+    double min=181;
+
     for(auto const & element : elements(gridView))
     {
+      auto geom = element.geometry();
+      auto n_v = geom.corners();
 
-/*     VAŠ KOD dolazi ovdje.
- *     RAČUNATI MIN I MAX KUT U SVAKOM ELEMENTU. 
-*/
+      auto p1 = geom.corner(0);
+      auto p2 = geom.corner(1);
+      auto p3 = geom.corner(2);
+
+      double max1 = 0, min1 = 0;
+      double kut1 =kut(p1, p2, p3);
+      double kut2 =kut(p3, p1, p2);
+      double kut3 =kut(p2, p3, p1);
+      max1 = std::max(kut1, std::max(kut2, kut3));
+      min1 = std::max(kut1, std::min(kut2, kut3));
+
+      if(max1 > max)
+          max = max1;
+      if(min1 < min)
+          min = min1;
+
+      count++;
+
+
     } 
 
-   // ISPISATI BROJ ELEMENATA; MINIMALNI I MAKSIMALNI KUT U STUPNJEVIMA:
-    
+   std::cout << "BRoj elemenata : " << ", minimalni kut = " << min << ", maksimalni kut = " << max;
 
-    // Ispis mreže u VTK formatu (u datoteku poluvijenac.vtu)
     Dune::VTKWriter<LeafGridView> vtkwriter(gridView);
     vtkwriter.write("poluvijenac");
 
