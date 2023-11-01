@@ -34,11 +34,13 @@ double kut(Point const & p1, Point const & p2, Point const & p3)
 
 int main(int argc, char** argv)
 {
-    Dune::MPIHElper::instance(argc, argv);
+    //Dune::MPIHElper::instance(argc, argv);
+    Dune::MPIHelper::instance(argc, argv);
     const int dim = 2;
     using GridType = Dune::UGGrid<dim>;
     using LeafGridView = GridType::LeafGridView;
-    std::unique_ptr<GridType> p_grid = DUne::GmshReader<GridType>::read(argv[1]);
+    //std::unique_ptr<GridType> p_grid = Dune::GmshReader<GridType>::read(argv[1]);
+    std::unique_ptr<GridType> p_grid = Dune::GmshReader<GridType>::read(argv[1]);
     auto gridView = p_grid->leafGridView();
 
     int count=0;
@@ -59,7 +61,8 @@ int main(int argc, char** argv)
       double kut2 =kut(p3, p1, p2);
       double kut3 =kut(p2, p3, p1);
       max1 = std::max(kut1, std::max(kut2, kut3));
-      min1 = std::max(kut1, std::min(kut2, kut3));
+      //min1 = std::max(kut1, std::min(kut2, kut3));
+      min1 = std::min(kut1, std::min(kut2, kut3));
 
       if(max1 > max)
           max = max1;
@@ -71,7 +74,7 @@ int main(int argc, char** argv)
 
     } 
 
-   std::cout << "BRoj elemenata : " << ", minimalni kut = " << min << ", maksimalni kut = " << max;
+   std::cout << "BRoj elemenata : " << count << ", minimalni kut = " << min << ", maksimalni kut = " << max;
 
     Dune::VTKWriter<LeafGridView> vtkwriter(gridView);
     vtkwriter.write("poluvijenac");
